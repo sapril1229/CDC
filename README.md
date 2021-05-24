@@ -7,6 +7,13 @@
 |  1.0         | 16-MAY-21 | Initial release                         
 
 
+
+|**FILES**            |                                            |
+|---------------------|--------------------------------------------|  
+| **cdc_ip.sv**       | Clock domain crossing using Vivado IP async FIFO   
+| **cdc_noip.sv**     | Clock domain crossing using a firmware constructed FIFO in addition to the IP async FIFO for comparison
+
+
 #### Information and Tools
 
 |**Organization**     |                                            |
@@ -44,7 +51,12 @@ This is similar to the plesiochronous case.  Since the clock fa is less than fb,
 ***Figure-2:  Data Synchronizer when fa=fb but clocks are independent***
 
 ### Source clock (fa) is greater than destination clock (fb)
-When fa is much greater that fb, it is generally accepted that a FIFO is required to buffer the data to the extent that the data comes in bursts. See Figure 3. Obviously sustained data rates at the faster clock speed will eventually overflow.  
+When fa is much greater that fb, it is generally accepted that a FIFO is required to buffer the data to the extent that the data comes in bursts. See Figure 3. Obviously sustained data rates at the faster clock speed will eventually overflow. For this reason, an inter-packet GAP (IGP) is sometimes introduced. 
+
+In practical applications where fa!=fb, a data FIFO is the best solution even if the depth of the FIFO is one or two words. A practical uni-directional CDC design consists of the following components:
+ - Ingress FSM : fa domain.  This FSM writes data from the ingress side into memory and keeps track of the memory locations using a counter.  In general the counter just wraps and the ingress FSM doesn't care if the data has been consumed before overwriting. Note that the memory counter is converted to gray code so that it can be synchronized by the Egress FSM
+ - Egress FSM : fb domain.  This FSM reads data but before doing so, waits the number of programed preload or synchronization levels before starting the read. In addition to the FSM, the fb domain synchronizes the gray code counter and then converts it to binary. This is used along with a local fb-sourced counter to keep track of available memory to be read out.  In addition there is a synchronized version of the data valid signal from the ingress side.  This is used to terminate the cycle.   
+
 
 ![fig3](docs/fig3.JPG)   
 ***Figure-3:  Data FIFO when fa>fb***
@@ -65,7 +77,7 @@ To prevent overflow, the IPG must be 500 ns - 50 ns = 450 ns
 
 ## Testbench Design
 
-The figure below shows two clock domains, clk_b and clk_b, along with the data and control for each interface.  In this design, block A is the test bench providing the clocks and data, and block b is the device under test (DUT).
+The figure below shows two clock domains, clk_a and clk_b, along with the data and control for each interface.  In this design, block A is the test bench providing the clocks and data, and block b is the device under test (DUT).
 
 ![fig4](docs/fig4.JPG)   
 ***Figure-4:  Test Bench Design***
@@ -74,7 +86,7 @@ The figure below shows two clock domains, clk_b and clk_b, along with the data a
 
 | Port Name     | Direction | BitWidth | Description                        |
 |---------------|-----------|----------|------------------------------------| 
-| rst           | Input     |    1     | Active high, asynchronous reset.    |
+| areset        | Input     |    1     | Active high, asynchronous reset.    |
 | clk_a        | Input     |    1     | CLock for data_a and data_valid_a.
 | data_valid_a | Input     |     1     | Goes high when a valid data frame has been received and stays high for the entire duration of the received data. frame.
 | data_a       | Input     |      8     | Received data. Valid when data_valid_a is high..
