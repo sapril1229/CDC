@@ -46,7 +46,7 @@ module cdc_fifo
 
 //-------------------------------------------------------------------------------------------------
 // signals
-  logic         valid_ad;
+  logic         valid_ad,rst_b0,rst_b1;
   logic [3:0]   valid_ar;
   logic [7:0]   bc,bc_gray,bc_gray_r0,bc_gray_r1;
   logic [7:0]   bi,f2c;
@@ -126,11 +126,24 @@ enum
 //-------------------------------------------------------------------------------------------------
 // FSM 2:  Receive side
 
-//----------------------------------------------------
-// Synchronize the gray code to the new clock domain
+//Sync reset
   always_ff @(posedge clk_b or posedge rst)
     begin
-    if (rst)
+      if (rst)
+        begin
+          rst_b0<=1;
+          rst_b1<=1;
+        end else
+        begin
+          rst_b0<=rst;
+         rst_b1<=rst_b0;
+        end
+    end
+
+// Synchronize the gray code to the new clock domain
+  always_ff @(posedge clk_b or posedge rst_b1)
+    begin
+    if (rst_b1)
       begin
         bc_gray_r0<=0;
         bc_gray_r1<=0;
@@ -141,14 +154,13 @@ enum
         end
     end
 
-//----------------------------------------------------
 // Create a delayed version of the ingress valid signal
    generate genvar k;
      for (k=0; k<=3; k=k+1)
        begin : gen_ar
-         always_ff @(posedge clk_b or posedge rst)
+         always_ff @(posedge clk_b or posedge rst_b1)
            begin
-             if (rst)
+             if (rst_b1)
              begin
                valid_ar[k]<=0;
              end else
@@ -163,14 +175,13 @@ enum
        end
    endgenerate
 
-//----------------------------------------------------
 // Convert gray code to binary for receive FSM pointer usage
    generate genvar j;
      for (j=0; j<8; j=j+1)
        begin : gen_bin
-         always_ff @(posedge clk_b or posedge rst)
+         always_ff @(posedge clk_b or posedge rst_b1)
            begin
-             if (rst)
+             if (rst_b1)
              begin
                bi[j]<=0;
              end else
@@ -189,9 +200,9 @@ enum
  ,F2_EMPTY_S
 } f2_state;
 //
-  always_ff @(posedge clk_b or posedge rst)
+  always_ff @(posedge clk_b or posedge rst_b1)
   begin
-    if (rst)
+    if (rst_b1)
       begin
         f2seq<=0;
         f2c<=0;

@@ -16,8 +16,8 @@
 ---------------------------------------------------------------------------------------------------
 Description:
 
-This is a simple clock domain crossing example using an firmware to implement a cdc fifo
-
+This is a simple clock domain crossing example using an firmware to implement a cdc fifo.
+It compares an async fifo built with Fifo generator 13.2 to the custom firmware for reference.
 
 -------------------------------------------------------------------------------------------------*/
 module cdc_noip

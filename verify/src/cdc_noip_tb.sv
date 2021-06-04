@@ -49,7 +49,7 @@ timeprecision 1ps;  // #001 = 1 ps
   localparam shortint CDC_BUFFER=4;    // Depth of CDC buffer in words
 
 // general parameters
-  localparam real clock=5.000;
+  localparam real clock=CLK_SPEED_A*10;
   localparam shortint PKT_TERM=43;
   localparam shortint IP_SEL=0;        // Select 1 for ip fifo, 0 for non-ip fifo
 
@@ -126,30 +126,41 @@ begin
 #`CLK
   sim_test=000020;
 #`CLK20
+  sim_test=000030;
+  rst=0;
+#100ns;               // async reset
+  sim_test=000040;
+  rst=1;
+#`CLK20
+#20ns
+  sim_test=000050;
+  rst=0;
+#`CLK20
+  sim_test=000060;
   syncd_input_packet=$fopen("../../../../../verify/output/syncd_inpt_pkt.hex","w");
 #`CLK20
-  sim_test=000030;
+  sim_test=000070;
   $display ("(000030)***** Drive rst low to deassert");
   rst<=0;
 #`CLK10
-    sim_test=000040;
-    $display ("(000040)***** Open test vector file and save to array");
+    sim_test=000080;
+    $display ("(000080)***** Open test vector file and save to array");
       $readmemh("../../../../../verify/test_vectors/test_data1.hex", test_pkt);
       for (i=1; i<=FRAME_BYTES; i++)
         begin
           $display("\t test_pkt[ %0d] = %h",i,test_pkt[i]);
         end
 #`CLK
-    sim_test=000050;
-    $display ("(000050)***** %d bytes written to memory", FRAME_BYTES);
+    sim_test=000090;
+    $display ("(000090)***** %d bytes written to memory", FRAME_BYTES);
 #`CLK10
-    sim_test=000060;
-    $display ("(000060)***** Send packets into the DUT");
+    sim_test=000100;
+    $display ("(000100)***** Send packets into the DUT");
       send_packets=1;
         wait (packets_sent);
-          $display ("(000070)***** Number of packets sent per cycle: %d", NUM_PACKETS);
-          $display ("(000080)***** Number of cycles:                 %d", NUM_CYCLES);
-          $display ("(000090)***** Number of total packets:          %d", NUM_CYCLES*NUM_PACKETS);
+          $display ("(000110)***** Number of packets sent per cycle: %d", NUM_PACKETS);
+          $display ("(000120)***** Number of cycles:                 %d", NUM_CYCLES);
+          $display ("(000130)***** Number of total packets:          %d", NUM_CYCLES*NUM_PACKETS);
  #`CLK
       send_packets=0;
 
@@ -299,8 +310,8 @@ end
 // Clock Generation
  initial
     begin
-    #1ns;
-      $display ("***** 200 MHz clock A started");
+    #1.2ns;
+    $display ("***** 200 MHz clock A started");
      forever
        begin
          #CLK_SPEED_A clk_a=1'b0;
